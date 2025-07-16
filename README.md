@@ -1,1 +1,2 @@
 # SmartaAIdzowa
+# DzowaAInotes

@@ -12,6 +12,7 @@ export interface Note {
   isStarred: boolean;
   audioUrl?: string; // URL for recorded audio playback
   duration?: number; // duration in seconds for audio notes
+  fileUrl?: string; // URL for preview/download of uploaded files
 }
 
 export interface ChatMessage {
@@ -19,4 +20,12 @@ export interface ChatMessage {
   type: 'user' | 'ai';
   content: string;
   timestamp: Date;
+}
+
+export interface UserProfile {
+  id: string;
+  full_name: string;
+  avatar_url?: string;
+  bio?: string;
+  created_at: string;
 }

@@ -160,7 +160,6 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Background Elements */}
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-900/20 via-black to-pink-900/20 pointer-events-none" />
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent pointer-events-none" />
 
       {/* Navigation */}
@@ -253,10 +252,7 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
               
-              <button className="group px-8 py-4 border border-gray-600 text-white rounded-full font-semibold text-lg hover:border-purple-500 hover:bg-purple-500/10 transition-all duration-200 flex items-center space-x-2">
-                <Play className="w-5 h-5" />
-                <span>Watch Demo</span>
-              </button>
+
             </div>
 
             {/* Stats */}
@@ -320,21 +316,18 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
           </div>
 
           <div className="relative max-w-4xl mx-auto">
-            <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-8 aspect-video flex items-center justify-center">
-              <button className="group w-24 h-24 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center hover:scale-110 transition-transform duration-300">
-                <Play className="w-10 h-10 text-white ml-1 group-hover:scale-110 transition-transform" />
-              </button>
-            </div>
-            
+          <video autoPlay muted loop  src="src\components\SmaRta AI Notes - Google Chrome 2025-07-19 22-31-53.mp4"></video>
+
             {/* Floating UI Elements */}
             <div className="absolute -top-4 -left-4 bg-purple-500/20 backdrop-blur-xl border border-purple-500/30 rounded-lg p-3 animate-float">
-              <Mic className="w-6 h-6 text-purple-400" />
+              <Mic className="w-6 h-6 text-purple-400" onClick={onGetStarted} />
+              
             </div>
             <div className="absolute -top-4 -right-4 bg-pink-500/20 backdrop-blur-xl border border-pink-500/30 rounded-lg p-3 animate-float delay-1000">
-              <Brain className="w-6 h-6 text-pink-400" />
+              <Brain className="w-6 h-6 text-pink-400"onClick={onGetStarted} />
             </div>
             <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-500/20 backdrop-blur-xl border border-blue-500/30 rounded-lg p-3 animate-float delay-2000">
-              <MessageSquare className="w-6 h-6 text-blue-400" />
+              <MessageSquare className="w-6 h-6 text-blue-400" onClick={onGetStarted}/>
             </div>
           </div>
         </div>
@@ -474,9 +467,7 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
               >
                 Start Your Free Trial
               </button>
-              <button className="px-8 py-4 border border-gray-600 text-white rounded-full font-semibold text-lg hover:border-purple-500 hover:bg-purple-500/10 transition-all duration-200">
-                Schedule Demo
-              </button>
+
             </div>
             <p className="text-gray-400 text-sm mt-4">
               No credit card required • 14-day free trial • Cancel anytime

@@ -56,7 +56,8 @@ function Sidebar({
         </div>
       </div>
       
-      <nav className="flex-1 px-4">
+      {/* Make nav scrollable, flex-1 ensures it fills available space */}
+      <nav className="flex-1 px-4 overflow-y-auto">
         {/* Quick Actions */}
         {isSidebarOpen && onCreateNote && (
           <div className="mb-6">

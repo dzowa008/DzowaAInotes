@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -36,6 +37,8 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isVisible, setIsVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  const { loginWithProvider, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
     setIsVisible(true);
@@ -149,6 +152,12 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
     });
     setErrors({});
     setSuccessMessage('');
+  };
+
+  // Add social login handler
+  const handleSocialLogin = async (provider: 'google' | 'github' | 'facebook' | 'discord' | 'twitter') => {
+    await loginWithProvider(provider);
+    // Supabase will redirect and handle session
   };
 
   if (isLoading) {
@@ -332,6 +341,28 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
                   </p>
                 </div>
 
+                {/* Social Login Buttons */}
+                <div className="mb-6">
+                  <button
+                    type="button"
+                    onClick={() => handleSocialLogin('google')}
+                    disabled={authLoading}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 mb-3 bg-white text-gray-900 rounded-lg font-semibold border border-gray-300 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  >
+                    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
+                    <span>Continue with Google</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSocialLogin('github')}
+                    disabled={authLoading}
+                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 mb-3 bg-gray-800 text-white rounded-lg font-semibold border border-gray-700 hover:bg-gray-900 transition-colors disabled:opacity-50"
+                  >
+                    <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" className="w-5 h-5 mr-2 invert" />
+                    <span>Continue with GitHub</span>
+                  </button>
+                </div>
+
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-6">
                   {/* Full Name (Sign Up Only) */}
@@ -498,7 +529,7 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
                         onClick={toggleAuthMode}
                         className="ml-2 text-purple-400 hover:text-purple-300 font-semibold transition-colors"
                       >
-                        {isLogin ? 'Sign up' : 'Sign in'}
+                        {isLogin ? 'Sign up' : 'Login'}
                       </button>
                     </p>
                   </div>

@@ -481,6 +481,7 @@ function Dashboard() {
         setTimeout(() => {
           const fileType = file.type.startsWith('audio/') ? 'audio' : 
                           file.type.startsWith('video/') ? 'video' : 
+                          file.type.startsWith('document/') ? 'document':
                           file.type.startsWith('image/') ? 'image' : 'document';
           
           const newNote: Note = {
@@ -1092,6 +1093,10 @@ function Dashboard() {
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
+        onLogout={() => {
+          localStorage.clear();
+          window.location.reload();
+        }}
       />
     </div>
   );

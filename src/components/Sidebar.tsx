@@ -1,5 +1,5 @@
-import React from 'react';
-import { Bot, TrendingUp, FileText, MessageSquare, Mic, Upload, Search, Folder, Star, Menu, Plus, Edit3, BookOpen } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bot, TrendingUp, FileText, MessageSquare, Mic, Upload, Search, Folder, Star, Menu, Plus, Edit3, BookOpen, Youtube, Download, Link } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface SidebarProps {
@@ -12,12 +12,14 @@ interface SidebarProps {
   categories?: string[];
   onCreateNote?: () => void;
   recentNotes?: any[];
+  onYoutubeNote?: (summary: any) => void;
 }
 
 const navigationItems = [
   { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
   { id: 'notes', label: 'All Notes', icon: FileText },
   { id: 'chat', label: 'AI Chat', icon: MessageSquare },
+  { id: 'youtube', label: 'YouTube Summarizer', icon: Youtube },
   { id: 'recorder', label: 'Audio Recorder', icon: Mic },
   { id: 'upload', label: 'Upload Files', icon: Upload },
   { id: 'search', label: 'Smart Search', icon: Search },

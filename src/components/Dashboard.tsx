@@ -3,23 +3,23 @@ import {
   Brain, 
   Zap, 
   Target, 
-  Calendar, 
   BarChart3, 
   BookOpen, 
   Lightbulb, 
   Clock, 
   TrendingUp,
-  Users,
-  Globe,
-  Bookmark,
   Archive,
   Filter,
-  SortAsc,
   Hash,
-  Link,
   Workflow,
-  PieChart,
-  Activity
+  Activity,
+  Mic,
+  Upload,
+  PenTool,
+  Star,
+  Edit3,
+  Trash2,
+  Folder
 } from 'lucide-react';
 import SettingsModal from './SettingsModal';
 import Sidebar from './Sidebar';
@@ -30,14 +30,16 @@ import { NotesGrid } from './NotesGrid';
 import ChatInterface from './ChatInterface';
 import AudioRecorder from './AudioRecorder';
 import FileUpload from './FileUpload';
-import NoteModal from './NoteModal';
+import DocumentViewer from './DocumentViewer';
 import CreateNoteModal from './CreateNoteModal';
 import NoteEditor from './NoteEditor';
 import SmartSearch from './SmartSearch';
 import Categories from './Categories';
 import StarredNotes from './StarredNotes';
+import YoutubeSummarizer from './YoutubeSummarizer';
 import { Note, ChatMessage } from '../types';
 import { AlertCircle } from 'lucide-react';
+import { FileProcessor } from '../utils/fileProcessor';
 
 function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -465,50 +467,82 @@ function Dashboard() {
     }
   };
 
-  // Enhanced file upload with progress
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Enhanced file upload with fast processing and data extraction
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (files) {
-      addNotification(`Processing ${files.length} file(s)...`, 'info');
-      addActivity('upload', `Started processing ${files.length} file(s)`, Upload);
-      
-      Array.from(files).forEach((file, index) => {
-        setIsProcessing(true);
-        
-        // Simulate file processing with progress
-        const processingTime = Math.random() * 3000 + 1000; // 1-4 seconds
-        
-        setTimeout(() => {
-          const fileType = file.type.startsWith('audio/') ? 'audio' : 
-                          file.type.startsWith('video/') ? 'video' : 
-                          file.type.startsWith('document/') ? 'document':
-                          file.type.startsWith('image/') ? 'image' : 'document';
+    if (!files || files.length === 0) return;
+
+    setIsProcessing(true);
+    addNotification(`Processing ${files.length} file(s)...`, 'info');
+    addActivity('upload', `Started processing ${files.length} file(s)`, Upload);
+
+    try {
+      // Process ALL files concurrently for maximum speed (no batching needed with instant processing)
+      const allFilePromises = Array.from(files).map(async (file, index) => {
+        try {
+          // Use FileProcessor for comprehensive file analysis (instant)
+          const processedFile = await FileProcessor.processFile(file);
+          const note = FileProcessor.createNoteFromProcessedFile(processedFile, 'Uploads');
           
-          const newNote: Note = {
-            id: (Date.now() + index).toString(),
+          // Add file URL for preview if it's an image (instant)
+          if (file.type.startsWith('image/')) {
+            const fileUrl = URL.createObjectURL(file);
+            note.fileUrl = fileUrl;
+          }
+          
+          // Add audio URL for audio files (instant)
+          if (file.type.startsWith('audio/')) {
+            const audioUrl = URL.createObjectURL(file);
+            note.audioUrl = audioUrl;
+          }
+          
+          return note;
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          addNotification(`Error processing "${file.name}": ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+          
+          // Create a basic note even if processing fails
+          const fallbackNote: Note = {
+            id: `file_${Date.now()}_${index}`,
             title: file.name,
-            content: `Uploaded ${fileType} file: ${file.name}\n\nFile size: ${(file.size / 1024 / 1024).toFixed(2)} MB\nUploaded on: ${new Date().toLocaleString()}\n\nThis file has been processed by AI and is ready for analysis and search.`,
-            type: fileType as Note['type'],
-            tags: [fileType, 'uploaded', file.name.split('.').pop() || 'file'],
+            content: `File upload failed: ${file.name}\nSize: ${file.size} bytes\nType: ${file.type}\nError: ${error instanceof Error ? error.message : 'Unknown error'}\nUploaded: ${new Date().toLocaleString()}`,
+            type: file.type.startsWith('audio/') ? 'audio' : 
+                  file.type.startsWith('video/') ? 'video' :
+                  file.type.startsWith('image/') ? 'image' : 'document',
+            tags: ['uploaded', 'error', file.type.split('/')[0]],
             category: 'Uploads',
             createdAt: new Date(),
             updatedAt: new Date(),
-            summary: `AI Summary: ${file.name} is a ${fileType} file (${(file.size / 1024 / 1024).toFixed(2)} MB) that has been automatically processed and categorized. The content is now searchable and can be referenced in conversations with the AI assistant.`,
+            summary: `Failed to process: ${file.name}`,
             isStarred: false
           };
           
-          setNotes(prev => [newNote, ...prev]);
-          addNotification(`"${file.name}" uploaded and processed successfully`, 'success');
-          addActivity('upload', `Successfully processed ${file.name}`, Upload);
-          
-          if (index === files.length - 1) {
-            setIsProcessing(false);
-            addNotification(`All ${files.length} file(s) processed successfully`, 'success');
-            addActivity('upload', `Completed processing ${files.length} file(s)`, Upload);
-          }
-          autoSave();
-        }, processingTime);
+          return fallbackNote;
+        }
       });
+      
+      // Wait for ALL files to process concurrently
+      const processedFiles = await Promise.all(allFilePromises);
+      
+      // Add all processed files to notes
+      setNotes(prev => [...processedFiles, ...prev]);
+      
+      // Final success notification
+      addNotification(`All ${files.length} file(s) processed successfully!`, 'success');
+      addActivity('upload', `Completed processing ${files.length} file(s) with data extraction`, Upload);
+      
+      // Auto-save the new notes
+      autoSave();
+      
+    } catch (error) {
+      console.error('Batch processing error:', error);
+      addNotification(`Batch processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+    } finally {
+      setIsProcessing(false);
+      // Clear the file input
+      if (event.target) {
+        event.target.value = '';
+      }
     }
   };
 
@@ -632,7 +666,12 @@ function Dashboard() {
     autoSave();
   };
 
-  // Note editing functions
+  // Note viewing and editing functions
+  const handleViewNote = (note: Note) => {
+    setSelectedNote(note);
+    setEditingNote(null);
+  };
+
   const handleEditNote = (note: Note) => {
     setEditingNote(note);
     setSelectedNote(null);
@@ -956,7 +995,7 @@ function Dashboard() {
                   </div>
                   <NotesGrid
                     notes={notes.slice(0, 5)}
-                    onNoteClick={handleEditNote}
+                    onNoteClick={handleViewNote}
                     onToggleStar={toggleStarNote}
                     onBulkDelete={bulkDeleteNotes}
                   />
@@ -968,7 +1007,7 @@ function Dashboard() {
               <NotesGrid
                 notes={filteredNotes}
                 viewMode={viewMode}
-                onNoteClick={handleEditNote}
+                onNoteClick={handleViewNote}
                 onToggleStar={toggleStarNote}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
@@ -987,6 +1026,24 @@ function Dashboard() {
                 chatInput={chatInput}
                 setChatInput={setChatInput}
                 onSendMessage={sendChatMessage}
+              />
+            )}
+
+            {activeTab === 'youtube' && (
+              <YoutubeSummarizer
+                onCreateNote={(note) => {
+                  const newNote: Note = {
+                    ...note,
+                    id: Date.now().toString(),
+                    timestamp: new Date(),
+                    updatedAt: new Date(),
+                    isStarred: false
+                  };
+                  setNotes(prev => [newNote, ...prev]);
+                  addNotification('YouTube summary note created!', 'success');
+                  addActivity('youtube', `Created note from YouTube video`, Upload);
+                  autoSave();
+                }}
               />
             )}
 
@@ -1012,7 +1069,7 @@ function Dashboard() {
             {activeTab === 'search' && (
               <SmartSearch
                 notes={notes}
-                onNoteClick={handleEditNote}
+                onNoteClick={handleViewNote}
                 onToggleStar={toggleStarNote}
               />
             )}
@@ -1020,7 +1077,7 @@ function Dashboard() {
             {activeTab === 'categories' && (
               <Categories
                 notes={notes}
-                onNoteClick={handleEditNote}
+                onNoteClick={handleViewNote}
                 onToggleStar={toggleStarNote}
                 onCreateCategory={(name) => {
                   addNotification(`Category "${name}" created`, 'success');
@@ -1043,7 +1100,7 @@ function Dashboard() {
             {activeTab === 'starred' && (
               <StarredNotes
                 notes={notes}
-                onNoteClick={handleEditNote}
+                onNoteClick={handleViewNote}
                 onToggleStar={toggleStarNote}
               />
             )}
@@ -1055,7 +1112,7 @@ function Dashboard() {
         ref={fileInputRef}
         type="file"
         multiple
-        accept="audio/*,video/*,image/*,.pdf,.doc,.docx,.txt"
+        accept="audio/*,video/*,image/*,.pdf,.doc,.docx,.txt,.rtf,.md,.csv,.xls,.xlsx,.ppt,.pptx,.json,.xml,.yaml,.yml,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.html,.css,.zip,.rar,.7z"
         onChange={handleFileUpload}
         className="hidden"
       />
@@ -1073,10 +1130,15 @@ function Dashboard() {
       )}
 
       {selectedNote && (
-        <NoteModal
+        <DocumentViewer
           note={selectedNote}
           onClose={() => setSelectedNote(null)}
           onToggleStar={() => toggleStarNote(selectedNote.id)}
+          onEdit={() => {
+            setEditingNote(selectedNote);
+            setSelectedNote(null);
+          }}
+          onSave={handleSaveNote}
         />
       )}
 

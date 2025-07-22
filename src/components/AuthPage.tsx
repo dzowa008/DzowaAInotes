@@ -19,6 +19,7 @@ interface ValidationErrors {
   password?: string;
   confirmPassword?: string;
   fullName?: string;
+  form?: string;
 }
 
 function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
@@ -37,12 +38,28 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isVisible, setIsVisible] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-
-  const { loginWithProvider, isLoading: authLoading } = useAuth();
+  const { login, signUp, loginWithProvider, isLoading: authLoading, resetPassword } = useAuth();
+  const [showReset, setShowReset] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown && countdown > 0) {
+      timer = setInterval(() => {
+        setCountdown(prev => prev ? prev - 1 : null);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [countdown]);
 
   // Form validation
   const validateForm = (): boolean => {
@@ -80,38 +97,7 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Simulate authentication process with loading stages
-  const simulateAuth = async () => {
-    const stages = [
-      { stage: 'Validating credentials...', duration: 800 },
-      { stage: 'Connecting to server...', duration: 600 },
-      { stage: 'Verifying account...', duration: 700 },
-      { stage: 'Setting up session...', duration: 500 },
-      { stage: 'Loading dashboard...', duration: 400 }
-    ];
-
-    let progress = 0;
-    
-    for (let i = 0; i < stages.length; i++) {
-      setLoadingStage(stages[i].stage);
-      
-      // Animate progress
-      const targetProgress = ((i + 1) / stages.length) * 100;
-      const progressIncrement = (targetProgress - progress) / 20;
-      
-      for (let j = 0; j < 20; j++) {
-        progress += progressIncrement;
-        setLoadingProgress(Math.min(progress, targetProgress));
-        await new Promise(resolve => setTimeout(resolve, stages[i].duration / 20));
-      }
-    }
-
-    // Show success message
-    setSuccessMessage(isLogin ? 'Login successful!' : 'Account created successfully!');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    onAuthSuccess();
-  };
+  // Remove the unused simulateAuth function entirely
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,15 +107,35 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
     }
 
     setIsLoading(true);
-    setLoadingProgress(0);
-    setLoadingStage('');
-    setSuccessMessage('');
 
     try {
-      await simulateAuth();
+      let result;
+      if (isLogin) {
+        result = await login({ email: formData.email, password: formData.password });
+        if (!result.success && result.error?.includes('No account found')) {
+          setErrors({ 
+            email: 'No account exists with this email. Please sign up first.',
+            form: 'Would you like to create a new account instead?' 
+          });
+          setTimeout(() => {
+            setIsLogin(false);
+            setErrors({});
+          }, 3000);
+          return;
+        }
+      } else {
+        result = await signUp({ email: formData.email, password: formData.password, fullName: formData.fullName });
+      }
+      
+      if (result.success) {
+        // Immediately redirect to dashboard for both login and signup
+        onAuthSuccess();
+      } else {
+        setErrors({ email: result.error || 'Authentication failed. Please try again.' });
+        setIsLoading(false);
+      }
     } catch (error) {
       setErrors({ email: 'Authentication failed. Please try again.' });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -158,6 +164,22 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
   const handleSocialLogin = async (provider: 'google' | 'github' | 'facebook' | 'discord' | 'twitter') => {
     await loginWithProvider(provider);
     // Supabase will redirect and handle session
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetMessage('');
+    setResetError('');
+    if (!resetEmail) {
+      setResetError('Email is required');
+      return;
+    }
+    const { success, error } = await resetPassword(resetEmail);
+    if (success) {
+      setResetMessage('Password reset email sent! Check your inbox.');
+    } else {
+      setResetError(error || 'Failed to send reset email.');
+    }
   };
 
   if (isLoading) {
@@ -230,6 +252,34 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
               </div>
             )}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showReset) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="bg-gray-900/80 p-8 rounded-2xl shadow-xl w-full max-w-md">
+          <h2 className="text-2xl font-bold mb-4 text-purple-400">Reset Password</h2>
+          <form onSubmit={handleResetPassword} className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-3">Email Address</label>
+              <input
+                type="email"
+                value={resetEmail}
+                onChange={e => setResetEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500"
+                placeholder="Enter your email"
+              />
+            </div>
+            {resetError && <div className="text-red-400 text-sm">{resetError}</div>}
+            {resetMessage && <div className="text-green-400 text-sm">{resetMessage}</div>}
+            <button type="submit" className="w-full py-3 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 transition">Send Reset Email</button>
+            <button type="button" className="w-full py-2 mt-2 text-gray-400 hover:text-white" onClick={() => setShowReset(false)}>
+              ← Back to login
+            </button>
+          </form>
         </div>
       </div>
     );
@@ -331,14 +381,19 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
                 {/* Header */}
                 <div className="text-center mb-10">
                   <h2 className="text-3xl font-bold text-white mb-3">
-                    {isLogin ? 'Welcome Back' : 'Create Account'}
+                    {isLogin ? 'Welcome Back' : 'Create Your Account'}
                   </h2>
                   <p className="text-gray-400 text-lg">
                     {isLogin 
                       ? 'Sign in to access your AI-powered notes' 
-                      : 'Join thousands of users transforming their productivity'
+                      : 'Get started with SmaRta AI Notes - it\'s free!'
                     }
                   </p>
+                  {errors.form && (
+                    <div className="mt-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                      <p className="text-purple-300">{errors.form}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Social Login Buttons */}
@@ -352,15 +407,7 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
                     <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5 mr-2" />
                     <span>Continue with Google</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin('github')}
-                    disabled={authLoading}
-                    className="w-full flex items-center justify-center space-x-2 px-4 py-3 mb-3 bg-gray-800 text-white rounded-lg font-semibold border border-gray-700 hover:bg-gray-900 transition-colors disabled:opacity-50"
-                  >
-                    <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" className="w-5 h-5 mr-2 invert" />
-                    <span>Continue with GitHub</span>
-                  </button>
+
                 </div>
 
                 {/* Form */}
@@ -493,6 +540,7 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
                       <button
                         type="button"
                         className="text-sm text-purple-400 hover:text-purple-300 transition-colors font-medium"
+                        onClick={() => setShowReset(true)}
                       >
                         Forgot password?
                       </button>
@@ -523,14 +571,29 @@ function AuthPage({ onAuthSuccess, onBackToLanding }: AuthPageProps) {
                   {/* Toggle Auth Mode */}
                   <div className="text-center">
                     <p className="text-gray-400 text-lg">
-                      {isLogin ? "Don't have an account?" : "Already have an account?"}
-                      <button
-                        type="button"
-                        onClick={toggleAuthMode}
-                        className="ml-2 text-purple-400 hover:text-purple-300 font-semibold transition-colors"
-                      >
-                        {isLogin ? 'Sign up' : 'Login'}
-                      </button>
+                      {isLogin ? (
+                        <>
+                          New to SmaRta? 
+                          <button
+                            type="button"
+                            onClick={toggleAuthMode}
+                            className="ml-2 text-purple-400 hover:text-purple-300 font-semibold transition-colors"
+                          >
+                            Create an account →
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          Already have an account?
+                          <button
+                            type="button"
+                            onClick={toggleAuthMode}
+                            className="ml-2 text-purple-400 hover:text-purple-300 font-semibold transition-colors"
+                          >
+                            Sign in
+                          </button>
+                        </>
+                      )}
                     </p>
                   </div>
 

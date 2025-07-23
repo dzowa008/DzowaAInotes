@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, SortAsc, Calendar, Tag, FileText, Mic, Camera, Upload, Brain, Zap } from 'lucide-react';
 import { Note } from '../types';
+import { aiService } from '../services/aiService';
 
 interface SmartSearchProps {
   notes: Note[];
@@ -31,8 +32,8 @@ function SmartSearch({ notes, onNoteClick, onToggleStar }: SmartSearchProps) {
   const performSearch = async () => {
     setIsSearching(true);
     
-    // Simulate AI-powered search delay
-    setTimeout(() => {
+    try {
+      // Basic text filtering first
       let results = notes.filter(note => {
         const matchesQuery = searchQuery === '' || 
           note.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -48,16 +49,64 @@ function SmartSearch({ notes, onNoteClick, onToggleStar }: SmartSearchProps) {
         return matchesQuery && matchesType && matchesCategory && matchesStarred;
       });
 
+      // If we have results and a meaningful search query, enhance with AI
+      if (searchQuery.trim().length > 3 && results.length > 0) {
+        try {
+          const enhancedResults = await aiService.enhanceSearch(searchQuery, results, filters);
+          if (enhancedResults && enhancedResults.length > 0) {
+            results = enhancedResults;
+          }
+        } catch (aiError) {
+          console.warn('AI search enhancement failed, using basic results:', aiError);
+          // Continue with basic results
+        }
+      }
+
       // Sort results
       if (sortBy === 'date') {
         results.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
       } else if (sortBy === 'title') {
         results.sort((a, b) => a.title.localeCompare(b.title));
+      } else if (sortBy === 'relevance' && searchQuery.trim()) {
+        // AI-enhanced relevance sorting
+        results.sort((a, b) => {
+          const aScore = calculateRelevanceScore(a, searchQuery);
+          const bScore = calculateRelevanceScore(b, searchQuery);
+          return bScore - aScore;
+        });
       }
 
       setSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
-    }, 500);
+    }
+  };
+
+  const calculateRelevanceScore = (note: any, query: string) => {
+    const queryLower = query.toLowerCase();
+    let score = 0;
+    
+    // Title matches get highest score
+    if (note.title.toLowerCase().includes(queryLower)) score += 10;
+    
+    // Content matches
+    const contentMatches = (note.content.toLowerCase().match(new RegExp(queryLower, 'g')) || []).length;
+    score += contentMatches * 2;
+    
+    // Tag matches
+    const tagMatches = note.tags.filter((tag: string) => tag.toLowerCase().includes(queryLower)).length;
+    score += tagMatches * 5;
+    
+    // Summary matches
+    if (note.summary && note.summary.toLowerCase().includes(queryLower)) score += 3;
+    
+    // Starred notes get bonus
+    if (note.isStarred) score += 1;
+    
+    return score;
   };
 
   const getTypeIcon = (type: string) => {

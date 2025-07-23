@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Star, Edit3, Download, Copy, ZoomIn, ZoomOut, FileText, Calendar, Tag, User, MessageCircle, Send, Bot, Minimize2, Maximize2, Save, Eye } from 'lucide-react';
+import {
+  X, Star, Edit3, Download, Copy, ZoomIn, ZoomOut, FileText,
+  Calendar, Tag, MessageCircle, Send, Bot, Minimize2,
+  Maximize2, Save
+} from 'lucide-react';
 import { Note, ChatMessage } from '../types';
 import { generateNotePDF } from '../utils/pdfGenerator';
+import { aiService } from '../services/aiService';
 
 interface DocumentViewerProps {
   note: Note;
@@ -25,7 +30,6 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
 
   const handleCopyContent = () => {
     navigator.clipboard.writeText(note.content);
-    // You could add a notification here
   };
 
   const handleDownloadPDF = () => {
@@ -72,69 +76,59 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      text: chatInput,
-      sender: 'user',
+      content: chatInput,
+      type: 'user',
       timestamp: new Date()
     };
 
     setChatMessages(prev => [...prev, userMessage]);
+    const currentInput = chatInput;
     setChatInput('');
     setIsAiTyping(true);
 
-    // Simulate AI response based on note content and editing context
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(chatInput, isEditing ? editedContent : note.content, isEditing);
+    try {
+      // Convert chat history for AI service
+      const conversationHistory = aiService.convertChatHistory(chatMessages);
+      
+      // Get AI response using DeepSeek model
+      const response = await aiService.generateResponse(
+        currentInput,
+        isEditing ? editedContent : note.content,
+        isEditing,
+        conversationHistory
+      );
+
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: aiResponse,
-        sender: 'ai',
+        content: response.content,
+        type: 'ai',
         timestamp: new Date()
       };
+      
       setChatMessages(prev => [...prev, aiMessage]);
+      
+      // Show error if API failed but fallback was used
+      if (response.error) {
+        console.warn('AI API error, using fallback:', response.error);
+      }
+    } catch (error) {
+      console.error('Failed to get AI response:', error);
+      
+      // Fallback error message
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: '🚫 Sorry, I\'m having trouble responding right now. Please try again in a moment.',
+        type: 'ai',
+        timestamp: new Date()
+      };
+      
+      setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsAiTyping(false);
-    }, 1000 + Math.random() * 2000);
-  };
-
-  const generateAIResponse = (userInput: string, content: string, editing: boolean): string => {
-    const input = userInput.toLowerCase();
-    const noteContent = content.toLowerCase();
-    
-    if (editing) {
-      // Writing assistance responses
-      if (input.includes('improve') || input.includes('better') || input.includes('enhance')) {
-        return `✨ **Writing Enhancement Suggestions:**\n\n• Add more specific examples and details\n• Use stronger action verbs and descriptive language\n• Break up long paragraphs for better readability\n• Include bullet points for key information\n• Add section headers to organize content\n\nWould you like me to help rewrite a specific section?`;
-      }
-      
-      if (input.includes('rewrite') || input.includes('rephrase')) {
-        return `🔄 **I can help you rewrite content!**\n\nPlease select the text you want me to rephrase, or tell me which section needs improvement. I can help with:\n• Making it clearer and more concise\n• Improving flow and readability\n• Adding more engaging language\n• Restructuring for better organization`;
-      }
-      
-      if (input.includes('expand') || input.includes('add more') || input.includes('elaborate')) {
-        return `📝 **Content Expansion Ideas:**\n\n• Add real-world examples and case studies\n• Include step-by-step instructions\n• Provide background context\n• Add supporting statistics or research\n• Include personal insights and reflections\n\nWhich section would you like me to help expand?`;
-      }
-      
-      if (input.includes('structure') || input.includes('organize') || input.includes('format')) {
-        return `🏗️ **Structure Improvement Suggestions:**\n\n• Use clear headings (# ## ###)\n• Add bullet points for lists\n• Create numbered steps for processes\n• Use bold text for emphasis\n• Add horizontal lines (---) as dividers\n\nWould you like me to help restructure a specific section?`;
-      }
-      
-      if (input.includes('grammar') || input.includes('spelling') || input.includes('correct')) {
-        return `📚 **Writing Quality Check:**\n\n• Check for spelling and grammar errors\n• Ensure consistent tense usage\n• Verify proper punctuation\n• Review sentence structure\n• Confirm clarity and flow\n\nPaste the text you'd like me to review, and I'll provide specific suggestions!`;
-      }
-      
-      return `✍️ **Writing Assistant Ready!**\n\nI'm here to help you write and edit your note. I can assist with:\n• Improving clarity and flow\n• Expanding on ideas\n• Restructuring content\n• Grammar and style\n• Adding examples and details\n\nWhat would you like help with?`;
-    } else {
-      // Reading assistance responses
-      if (input.includes('summary') || input.includes('summarize')) {
-        return `📝 **Quick Summary:**\n\nThis note contains ${content.split(' ').length} words covering key concepts. The main themes focus on the core ideas presented. Would you like me to create a detailed summary or highlight specific sections?`;
-      }
-      
-      if (input.includes('key points') || input.includes('main points')) {
-        return `🎯 **Key Points:**\n\n• The note covers several important concepts\n• There are actionable insights throughout\n• Information is well-structured for understanding\n\nWould you like me to elaborate on any specific point?`;
-      }
-      
-      return `🤖 **I'm here to help!**\n\nI can assist you with:\n• Understanding the content\n• Summarizing key points\n• Answering questions\n• Suggesting improvements\n\nClick the edit button to start writing with my assistance!`;
     }
   };
+
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -144,34 +138,159 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
   };
 
   const formatContent = (content: string) => {
-    // Convert markdown-like content to HTML-like formatting
-    return content
-      .split('\n')
-      .map((line, index) => {
-        if (line.startsWith('# ')) {
-          return <h1 key={index} className="text-3xl font-bold text-gray-900 dark:text-white mb-4 mt-6">{line.substring(2)}</h1>;
-        } else if (line.startsWith('## ')) {
-          return <h2 key={index} className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-3 mt-5">{line.substring(3)}</h2>;
-        } else if (line.startsWith('### ')) {
-          return <h3 key={index} className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2 mt-4">{line.substring(4)}</h3>;
-        } else if (line.startsWith('- ') || line.startsWith('• ')) {
-          return <li key={index} className="text-gray-700 dark:text-gray-300 mb-1 ml-4">{line.substring(2)}</li>;
-        } else if (line.startsWith('**') && line.endsWith('**')) {
-          return <p key={index} className="font-bold text-gray-800 dark:text-gray-200 mb-2">{line.substring(2, line.length - 2)}</p>;
-        } else if (line.trim() === '') {
-          return <div key={index} className="mb-3"></div>;
-        } else if (line.trim() === '---') {
-          return <hr key={index} className="border-gray-300 dark:border-gray-600 my-6" />;
-        } else {
-          return <p key={index} className="text-gray-700 dark:text-gray-300 mb-2 leading-relaxed">{line}</p>;
+    const lines = content.split('\n');
+    const formattedElements: JSX.Element[] = [];
+    let currentList: JSX.Element[] = [];
+    let listType: 'bullet' | 'number' | null = null;
+
+    const flushList = () => {
+      if (currentList.length > 0) {
+        const ListComponent = listType === 'number' ? 'ol' : 'ul';
+        const listClass = listType === 'number' 
+          ? 'list-decimal list-inside space-y-2 mb-4 ml-4 text-gray-700 dark:text-gray-300'
+          : 'list-disc list-inside space-y-2 mb-4 ml-4 text-gray-700 dark:text-gray-300';
+        
+        formattedElements.push(
+          <ListComponent key={`list-${formattedElements.length}`} className={listClass}>
+            {currentList}
+          </ListComponent>
+        );
+        currentList = [];
+        listType = null;
+      }
+    };
+
+    lines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      
+      // Headers with enhanced styling
+      if (line.startsWith('# ')) {
+        flushList();
+        formattedElements.push(
+          <h1 key={index} className="text-3xl font-bold text-gray-900 dark:text-white mb-6 mt-8 pb-2 border-b-2 border-purple-500">
+            {line.substring(2)}
+          </h1>
+        );
+      } else if (line.startsWith('## ')) {
+        flushList();
+        formattedElements.push(
+          <h2 key={index} className="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4 mt-6 pb-1 border-b border-gray-300 dark:border-gray-600">
+            {line.substring(3)}
+          </h2>
+        );
+      } else if (line.startsWith('### ')) {
+        flushList();
+        formattedElements.push(
+          <h3 key={index} className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-3 mt-5">
+            {line.substring(4)}
+          </h3>
+        );
+      } else if (line.startsWith('#### ')) {
+        flushList();
+        formattedElements.push(
+          <h4 key={index} className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-2 mt-4">
+            {line.substring(5)}
+          </h4>
+        );
+      }
+      // Enhanced bullet points
+      else if (line.startsWith('- ') || line.startsWith('• ')) {
+        if (listType !== 'bullet') {
+          flushList();
+          listType = 'bullet';
         }
-      });
+        currentList.push(
+          <li key={index} className="leading-relaxed">
+            {formatInlineContent(line.substring(2))}
+          </li>
+        );
+      }
+      // Numbered lists
+      else if (/^\d+\. /.test(line)) {
+        if (listType !== 'number') {
+          flushList();
+          listType = 'number';
+        }
+        currentList.push(
+          <li key={index} className="leading-relaxed">
+            {formatInlineContent(line.replace(/^\d+\. /, ''))}
+          </li>
+        );
+      }
+      // Code blocks
+      else if (line.startsWith('```')) {
+        flushList();
+        formattedElements.push(
+          <div key={index} className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4 font-mono text-sm overflow-x-auto">
+            <code className="text-gray-800 dark:text-gray-200">{line.substring(3)}</code>
+          </div>
+        );
+      }
+      // Inline code
+      else if (line.includes('`') && line.split('`').length > 2) {
+        flushList();
+        formattedElements.push(
+          <p key={index} className="mb-3 text-gray-700 dark:text-gray-300 leading-relaxed">
+            {formatInlineContent(line)}
+          </p>
+        );
+      }
+      // Blockquotes
+      else if (line.startsWith('> ')) {
+        flushList();
+        formattedElements.push(
+          <blockquote key={index} className="border-l-4 border-purple-500 pl-4 py-2 mb-4 bg-gray-50 dark:bg-gray-800/50 italic text-gray-600 dark:text-gray-400">
+            {line.substring(2)}
+          </blockquote>
+        );
+      }
+      // Horizontal rules
+      else if (trimmedLine === '---' || trimmedLine === '***') {
+        flushList();
+        formattedElements.push(
+          <hr key={index} className="my-6 border-gray-300 dark:border-gray-600" />
+        );
+      }
+      // Empty lines
+      else if (trimmedLine === '') {
+        flushList();
+        formattedElements.push(<div key={index} className="mb-3" />);
+      }
+      // Regular paragraphs
+      else {
+        flushList();
+        formattedElements.push(
+          <p key={index} className="mb-3 text-gray-700 dark:text-gray-300 leading-relaxed text-justify">
+            {formatInlineContent(line)}
+          </p>
+        );
+      }
+    });
+
+    flushList(); // Flush any remaining list
+    return formattedElements;
+  };
+
+  const formatInlineContent = (text: string) => {
+    // Handle bold text **text**
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-gray-900 dark:text-white">$1</strong>');
+    
+    // Handle italic text *text*
+    text = text.replace(/\*(.*?)\*/g, '<em class="italic text-gray-800 dark:text-gray-200">$1</em>');
+    
+    // Handle inline code `code`
+    text = text.replace(/`(.*?)`/g, '<code class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-purple-600 dark:text-purple-400">$1</code>');
+    
+    // Handle links [text](url)
+    text = text.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" class="text-purple-600 dark:text-purple-400 hover:underline" target="_blank" rel="noopener noreferrer">$1</a>');
+    
+    return <span dangerouslySetInnerHTML={{ __html: text }} />;
   };
 
   return (
     <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col">
       {/* Document Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
@@ -182,15 +301,32 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
             </button>
             
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-white" />
-              </div>
+              <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               <div>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">{note.title}</h1>
-                <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+                {isEditing ? (
+                  <input
+                    type="text"
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    className="text-xl font-semibold bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white"
+                    style={{ fontSize: `${fontSize}px` }}
+                  />
+                ) : (
+                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white" style={{ fontSize: `${fontSize}px` }}>
+                    {note.title}
+                  </h1>
+                )}
+                <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
                   <span className="flex items-center space-x-1">
                     <Calendar className="w-4 h-4" />
-                    <span>{note.timestamp.toLocaleDateString()}</span>
+                    <span>
+                      {note.createdAt 
+                        ? new Date(note.createdAt).toLocaleDateString() 
+                        : note.timestamp 
+                          ? new Date(note.timestamp).toLocaleDateString()
+                          : 'Unknown date'
+                      }
+                    </span>
                   </span>
                   {note.category && (
                     <span className="flex items-center space-x-1">
@@ -298,188 +434,110 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
       </div>
 
       {/* Document Content */}
-      <div className="flex-1 overflow-y-auto flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* Main Content Area */}
-        <div className={`${showAIAssistant && !aiMinimized ? 'w-2/3' : 'w-full'} transition-all duration-300`}>
-          <div className="max-w-4xl mx-auto px-8 py-8">
-          {/* Metadata Panel */}
-          {showMetadata && (
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-8 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Document Information</h3>
-                <button
-                  onClick={() => setShowMetadata(false)}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-600 dark:text-gray-400">Created:</span>
-                  <span className="ml-2 text-gray-900 dark:text-white">
-                    {note.timestamp.toLocaleDateString()} at {note.timestamp.toLocaleTimeString()}
-                  </span>
-                </div>
-                
-                {note.updatedAt && note.updatedAt.getTime() !== note.timestamp.getTime() && (
-                  <div>
-                    <span className="font-medium text-gray-600 dark:text-gray-400">Last Updated:</span>
-                    <span className="ml-2 text-gray-900 dark:text-white">
-                      {note.updatedAt.toLocaleDateString()} at {note.updatedAt.toLocaleTimeString()}
-                    </span>
+        <div className={`flex-1 flex flex-col ${showAIAssistant && !aiMinimized ? 'w-2/3' : 'w-full'} transition-all duration-300`}>
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-4xl mx-auto px-6 py-8">
+              {/* Metadata Panel */}
+              {showMetadata && (
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-white">Document Information</h3>
+                    <button
+                      onClick={() => setShowMetadata(false)}
+                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                )}
-                
-                <div>
-                  <span className="font-medium text-gray-600 dark:text-gray-400">Category:</span>
-                  <span className="ml-2 text-gray-900 dark:text-white">{note.category || 'Uncategorized'}</span>
-                </div>
-                
-                <div>
-                  <span className="font-medium text-gray-600 dark:text-gray-400">Word Count:</span>
-                  <span className="ml-2 text-gray-900 dark:text-white">
-                    {note.content.split(/\s+/).filter(word => word.length > 0).length} words
-                  </span>
-                </div>
-                
-                {note.tags && note.tags.length > 0 && (
-                  <div className="md:col-span-2">
-                    <span className="font-medium text-gray-600 dark:text-gray-400">Tags:</span>
-                    <div className="mt-1 flex flex-wrap gap-2">
-                      {note.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-md text-xs"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Created:</span>
+                      <span className="ml-2 text-gray-900 dark:text-white">
+                        {note.createdAt 
+                          ? new Date(note.createdAt).toLocaleString()
+                          : note.timestamp 
+                            ? new Date(note.timestamp).toLocaleString()
+                            : 'Unknown date'
+                        }
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Updated:</span>
+                      <span className="ml-2 text-gray-900 dark:text-white">
+                        {note.updatedAt ? new Date(note.updatedAt).toLocaleString() : 'Not updated'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Category:</span>
+                      <span className="ml-2 text-gray-900 dark:text-white">{note.category || 'Uncategorized'}</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500 dark:text-gray-400">Type:</span>
+                      <span className="ml-2 text-gray-900 dark:text-white capitalize">{note.type}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-gray-500 dark:text-gray-400">Tags:</span>
+                      <span className="ml-2 text-gray-900 dark:text-white">
+                        {note.tags && note.tags.length > 0 ? note.tags.join(', ') : 'No tags'}
+                      </span>
                     </div>
                   </div>
-                )}
+                </div>
+              )}
 
-                {note.metadata && (
-                  <div className="md:col-span-2">
-                    <span className="font-medium text-gray-600 dark:text-gray-400">Source:</span>
-                    <div className="mt-1 text-gray-900 dark:text-white">
-                      {note.metadata.videoUrl && (
-                        <div className="text-sm">
-                          <span className="font-medium">Video URL:</span>
-                          <a 
-                            href={note.metadata.videoUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="ml-2 text-purple-600 dark:text-purple-400 hover:underline"
-                          >
-                            {note.metadata.videoUrl}
-                          </a>
-                        </div>
-                      )}
-                      {note.metadata.processedAt && (
-                        <div className="text-sm mt-1">
-                          <span className="font-medium">Processed:</span>
-                          <span className="ml-2">{new Date(note.metadata.processedAt).toLocaleString()}</span>
-                        </div>
-                      )}
-                    </div>
+              {/* Content */}
+              <div className="prose prose-lg max-w-none dark:prose-invert">
+                {isEditing ? (
+                  <textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="w-full min-h-[400px] p-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
+                    style={{ fontSize: `${fontSize}px`, lineHeight: '1.6' }}
+                    placeholder="Start writing your note..."
+                  />
+                ) : (
+                  <div style={{ fontSize: `${fontSize}px`, lineHeight: '1.6' }}>
+                    {formatContent(note.content)}
                   </div>
                 )}
               </div>
             </div>
-          )}
-
-          {!showMetadata && (
-            <button
-              onClick={() => setShowMetadata(true)}
-              className="mb-6 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300"
-            >
-              Show document information
-            </button>
-          )}
-
-            {/* Document Body */}
-            {isEditing ? (
-              <div className="space-y-4">
-                {/* Title Editor */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Title
-                  </label>
-                  <input
-                    type="text"
-                    value={editedTitle}
-                    onChange={(e) => setEditedTitle(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    style={{ fontSize: `${fontSize}px` }}
-                  />
-                </div>
-                
-                {/* Content Editor */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Content
-                  </label>
-                  <textarea
-                    value={editedContent}
-                    onChange={(e) => setEditedContent(e.target.value)}
-                    className="w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
-                    style={{ fontSize: `${fontSize}px`, lineHeight: '1.7', minHeight: '400px' }}
-                    placeholder="Start writing your note..."
-                  />
-                </div>
-              </div>
-            ) : (
-              <div 
-                className="prose prose-lg dark:prose-invert max-w-none"
-                style={{ fontSize: `${fontSize}px`, lineHeight: '1.7' }}
-              >
-                <div className="space-y-1">
-                  {formatContent(note.content)}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         {/* AI Assistant Panel */}
         {showAIAssistant && (
-          <div className={`${aiMinimized ? 'w-16' : 'w-1/3'} border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 transition-all duration-300 flex flex-col`}>
-            {/* AI Assistant Header */}
+          <div className={`bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col transition-all duration-300 ${
+            aiMinimized ? 'w-12' : 'w-1/3'
+          }`}>
+            {/* AI Header */}
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               {!aiMinimized && (
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                    <Bot className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {isEditing ? 'Writing Assistant' : 'AI Assistant'}
+                <>
+                  <div className="flex items-center space-x-2">
+                    <Bot className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <h3 className="font-medium text-gray-900 dark:text-white">
+                      {isEditing ? 'Writing Assistant' : 'Reading Assistant'}
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {isEditing ? 'Help me write and edit' : 'Ask me about this note'}
-                    </p>
                   </div>
-                </div>
+                  <button
+                    onClick={() => setAiMinimized(true)}
+                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                  >
+                    <Minimize2 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </>
               )}
-              
-              <div className="flex items-center space-x-1">
+              {aiMinimized && (
                 <button
-                  onClick={() => setAiMinimized(!aiMinimized)}
-                  className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title={aiMinimized ? "Expand assistant" : "Minimize assistant"}
+                  onClick={() => setAiMinimized(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg w-full"
                 >
-                  {aiMinimized ? <Maximize2 className="w-4 h-4" /> : <Minimize2 className="w-4 h-4" />}
+                  <Maximize2 className="w-4 h-4 text-gray-600 dark:text-gray-400 mx-auto" />
                 </button>
-                <button
-                  onClick={() => setShowAIAssistant(false)}
-                  className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                  title="Close assistant"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              )}
             </div>
 
             {!aiMinimized && (
@@ -487,27 +545,27 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
                 {/* Chat Messages */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {chatMessages.length === 0 && (
-                    <div className="text-center py-8">
-                      <Bot className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      <Bot className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                      <p className="text-sm">
                         {isEditing 
-                          ? "Hi! I'm here to help you write and edit your note. Ask me for suggestions!"
-                          : "Hi! I'm here to help you understand and work with this note. Ask me anything!"
+                          ? "I'm here to help you write better content. Ask me anything!"
+                          : "I'm here to help you understand this note. What would you like to know?"
                         }
                       </p>
                     </div>
                   )}
                   
                   {chatMessages.map((message) => (
-                    <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                       <div className={`max-w-[85%] rounded-lg p-3 ${
-                        message.sender === 'user' 
+                        message.type === 'user' 
                           ? 'bg-purple-500 text-white' 
                           : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600'
                       }`}>
-                        <div className="text-sm whitespace-pre-wrap">{message.text}</div>
+                        <div className="text-sm whitespace-pre-wrap">{message.content}</div>
                         <div className={`text-xs mt-1 ${
-                          message.sender === 'user' ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'
+                          message.type === 'user' ? 'text-purple-100' : 'text-gray-500 dark:text-gray-400'
                         }`}>
                           {message.timestamp.toLocaleTimeString()}
                         </div>

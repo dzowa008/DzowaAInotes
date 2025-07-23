@@ -40,6 +40,7 @@ import YoutubeSummarizer from './YoutubeSummarizer';
 import { Note, ChatMessage } from '../types';
 import { AlertCircle } from 'lucide-react';
 import { FileProcessor } from '../utils/fileProcessor';
+import { aiService } from '../services/aiService';
 
 function Dashboard() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -546,8 +547,8 @@ function Dashboard() {
     }
   };
 
-  // Enhanced chat with typing simulation
-  const sendChatMessage = () => {
+  // Enhanced chat with real AI integration
+  const sendChatMessage = async () => {
     if (!chatInput.trim()) return;
     
     const userMessage: ChatMessage = {
@@ -561,23 +562,49 @@ function Dashboard() {
     const currentInput = chatInput;
     setChatInput('');
     
-    // Simulate AI typing
-    setTimeout(() => {
-      const responses = [
-        `I found ${notes.length} notes related to "${currentInput}". Here are the most relevant ones...`,
-        `Based on your notes, I can see patterns in your ${selectedCategory} category. Let me analyze this for you...`,
-        `I've processed your query about "${currentInput}". Here's what I discovered from your note collection...`,
-        `Your notes contain valuable insights about "${currentInput}". I've identified key themes and connections...`
-      ];
+    try {
+      // Prepare context from user's notes
+      const notesContext = notes.slice(0, 10).map(note => 
+        `Title: ${note.title}\nContent: ${note.content.substring(0, 200)}...\nCategory: ${note.category}`
+      ).join('\n\n');
+      
+      // Get real AI response using aiService
+      const response = await aiService.generateResponse(
+        currentInput,
+        `User has ${notes.length} notes. Recent notes context:\n\n${notesContext}`,
+        false,
+        chatMessages.slice(-5).map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }))
+      );
       
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        content: response.content,
         timestamp: new Date()
       };
+      
       setChatMessages(prev => [...prev, aiMessage]);
-    }, 1000 + Math.random() * 2000);
+      
+      // Show warning if using fallback
+      if (response.error) {
+        console.warn('AI API error, using fallback:', response.error);
+      }
+    } catch (error) {
+      console.error('Failed to get AI response:', error);
+      
+      // Fallback error message
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: `🤖 I'm having trouble connecting to AI services right now. Here's what I can tell you about "${currentInput}" based on your ${notes.length} notes: I can help you search, organize, and analyze your notes. Try asking me to summarize your recent notes or help you find specific content!`,
+        timestamp: new Date()
+      };
+      
+      setChatMessages(prev => [...prev, errorMessage]);
+    }
   };
 
   // Smart note creation with auto-categorization

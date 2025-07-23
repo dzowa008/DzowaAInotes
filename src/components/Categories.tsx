@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
-import { Folder, Plus, Edit3, Trash2, MoreVertical, FileText, Mic, Camera, Upload } from 'lucide-react';
+import {
+  Folder, Plus, Edit3, Trash2, MoreVertical, FileText,
+  Mic, Camera, Upload
+} from 'lucide-react';
 import { Note } from '../types';
 
 interface CategoriesProps {
@@ -10,16 +13,20 @@ interface CategoriesProps {
   onDeleteCategory: (name: string) => void;
 }
 
-function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDeleteCategory }: CategoriesProps) {
+function Categories({
+  notes,
+  onNoteClick,
+  onToggleStar,
+  onCreateCategory,
+  onDeleteCategory,
+}: CategoriesProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [showActions, setShowActions] = useState<string | null>(null);
 
-  // Get unique categories from notes
   const categories = Array.from(new Set(notes.map(note => note.category)));
-  
-  // Get category statistics
+
   const getCategoryStats = (category: string) => {
     const categoryNotes = notes.filter(note => note.category === category);
     return {
@@ -28,7 +35,7 @@ function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDele
       audio: categoryNotes.filter(n => n.type === 'audio').length,
       video: categoryNotes.filter(n => n.type === 'video').length,
       document: categoryNotes.filter(n => n.type === 'document').length,
-      starred: categoryNotes.filter(n => n.isStarred).length
+      starred: categoryNotes.filter(n => n.isStarred).length,
     };
   };
 
@@ -42,10 +49,14 @@ function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDele
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case 'audio': return <Mic className="w-4 h-4 text-red-400" />;
-      case 'video': return <Camera className="w-4 h-4 text-green-400" />;
-      case 'document': return <Upload className="w-4 h-4 text-purple-400" />;
-      default: return <FileText className="w-4 h-4 text-blue-400" />;
+      case 'audio':
+        return <Mic className="w-4 h-4 text-red-400" />;
+      case 'video':
+        return <Camera className="w-4 h-4 text-green-400" />;
+      case 'document':
+        return <Upload className="w-4 h-4 text-purple-400" />;
+      default:
+        return <FileText className="w-4 h-4 text-blue-400" />;
     }
   };
 
@@ -55,14 +66,13 @@ function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDele
       Work: 'from-purple-500/20 to-purple-600/20 border-purple-500/30',
       Research: 'from-orange-500/20 to-orange-600/20 border-orange-500/30',
       Ideas: 'from-green-500/20 to-green-600/20 border-green-500/30',
-      Uploads: 'from-pink-500/20 to-pink-600/20 border-pink-500/30'
+      Uploads: 'from-pink-500/20 to-pink-600/20 border-pink-500/30',
     };
     return colors[category as keyof typeof colors] || 'from-gray-500/20 to-gray-600/20 border-gray-500/30';
   };
 
   return (
     <div className="space-y-6">
-      {/* Categories Header */}
       <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
@@ -78,7 +88,6 @@ function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDele
           </button>
         </div>
 
-        {/* Create Category Form */}
         {isCreatingCategory && (
           <div className="mb-6 p-4 bg-gray-800/30 rounded-lg border border-gray-700">
             <div className="flex space-x-3">
@@ -109,7 +118,6 @@ function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDele
           </div>
         )}
 
-        {/* Categories Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map(category => {
             const stats = getCategoryStats(category);
@@ -157,7 +165,7 @@ function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDele
                     <span>Total Notes</span>
                     <span className="font-semibold">{stats.total}</span>
                   </div>
-                  
+
                   {stats.starred > 0 && (
                     <div className="flex justify-between text-yellow-400">
                       <span>Starred</span>
@@ -198,13 +206,12 @@ function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDele
         </div>
       </div>
 
-      {/* Category Notes */}
       {selectedCategory && (
         <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6">
           <h3 className="text-xl font-semibold text-white mb-4">
             Notes in "{selectedCategory}" ({notes.filter(n => n.category === selectedCategory).length})
           </h3>
-          
+
           <div className="space-y-3">
             {notes
               .filter(note => note.category === selectedCategory)
@@ -222,7 +229,12 @@ function Categories({ notes, onNoteClick, onToggleStar, onCreateCategory, onDele
                       </div>
                       <p className="text-gray-300 text-sm line-clamp-2 mb-2">{note.content}</p>
                       <div className="flex items-center space-x-4 text-xs text-gray-500">
-                        <span>{note.updatedAt.toLocaleDateString()}</span>
+                        {/* ✅ Safe updatedAt rendering */}
+                        <span>
+                          {note.updatedAt
+                            ? new Date(note.updatedAt).toLocaleDateString()
+                            : 'N/A'}
+                        </span>
                         {note.tags.length > 0 && (
                           <span>{note.tags.slice(0, 2).join(', ')}</span>
                         )}

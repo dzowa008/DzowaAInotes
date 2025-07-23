@@ -316,7 +316,7 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
           </div>
 
           <div className="relative max-w-4xl mx-auto">
-          <video autoPlay muted loop  src="src\components\SmaRta AI Notes - Google Chrome 2025-07-19 22-31-53.mp4"></video>
+          <video autoPlay muted loop  src="../smarta.mp4"></video>
 
             {/* Floating UI Elements */}
             <div className="absolute -top-4 -left-4 bg-purple-500/20 backdrop-blur-xl border border-purple-500/30 rounded-lg p-3 animate-float">

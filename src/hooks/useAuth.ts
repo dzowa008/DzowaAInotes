@@ -24,25 +24,17 @@ interface SignUpCredentials extends LoginCredentials {
   fullName?: string;
 }
 
-// Utility to fetch user profile
+// Utility to fetch user profile (disabled for local app)
 type FetchProfileResult = UserProfile | null;
 const fetchUserProfile = async (userId: string): Promise<FetchProfileResult> => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  if (error) return null;
-  return data as UserProfile;
+  // Return null since we're not using profiles table
+  return null;
 };
 
-// Utility to update user profile
+// Utility to update user profile (disabled for local app)
 const updateUserProfile = async (userId: string, updates: Partial<UserProfile>) => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .update(updates)
-    .eq('id', userId);
-  return { data, error };
+  // Return success since we're not using profiles table
+  return { data: null, error: null };
 };
 
 export function useAuth() {
@@ -83,8 +75,7 @@ export function useAuth() {
             id: data.session.user.id,
             email: data.session.user.email || '',
             fullName: data.session.user.user_metadata?.full_name,
-            avatar: data.session.user.user_metadata?.avatar_url,
-            profile // attach profile
+            avatar: data.session.user.user_metadata?.avatar_url
           },
           isLoading: false,
           isAuthenticated: true,
@@ -102,8 +93,7 @@ export function useAuth() {
             id: session.user.id,
             email: session.user.email || '',
             fullName: session.user.user_metadata?.full_name,
-            avatar: session.user.user_metadata?.avatar_url,
-            profile // attach profile
+            avatar: session.user.user_metadata?.avatar_url
           },
           isLoading: false,
           isAuthenticated: true,
@@ -190,21 +180,7 @@ export function useAuth() {
         return { success: false, error: signUpError?.message || 'Sign up failed' };
       }
 
-      // Create profile immediately
-      const { error: profileError } = await supabase.from('profiles').insert([
-        {
-          id: authData.user.id,
-          email: credentials.email,
-          full_name: credentials.fullName || '',
-          avatar_url: '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ]);
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-      }
+      // Skip profile creation since we're not using profiles table
 
       // Set auth state and proceed immediately
       setAuthState({
@@ -212,15 +188,7 @@ export function useAuth() {
           id: authData.user.id,
           email: authData.user.email || '',
           fullName: credentials.fullName,
-          avatar: '',
-          profile: {
-            id: authData.user.id,
-            email: credentials.email,
-            full_name: credentials.fullName || '',
-            avatar_url: '',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
+          avatar: ''
         },
         isLoading: false,
         isAuthenticated: true,

@@ -293,19 +293,19 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
     
     const summaries = {
       educational: {
-        title: 'Educational Video Summary',
-        content: '🎓 **Video Summary Generated**\n\n📺 **Source:** YouTube Video\n🔗 **URL:** ' + url + '\n⏱️ **Processed:** ' + new Date().toLocaleString() + '\n\n## 📋 Key Points\n\n• **Main Topic:** Core concepts and learning objectives\n• **Key Insights:** Important takeaways and explanations\n• **Examples:** Practical demonstrations and case studies\n• **Conclusions:** Summary of main findings\n\n## 🎯 Action Items\n\n• Review and expand on key concepts\n• Research related topics mentioned\n• Apply learnings to practical scenarios\n\n*This summary was automatically generated from the video content.*',
+        title: `Educational Video Summary - ${videoId}`,
+        content: '🎓 **Video Summary Generated**\n\n📺 **Source:** YouTube Video\n🔗 **URL:** ' + url + '\n🆔 **Video ID:** ' + videoId + '\n⏱️ **Processed:** ' + new Date().toLocaleString() + '\n\n## 📋 Key Points\n\n• **Main Topic:** Core concepts and learning objectives\n• **Key Insights:** Important takeaways and explanations\n• **Examples:** Practical demonstrations and case studies\n• **Conclusions:** Summary of main findings\n\n## 🎯 Action Items\n\n• Review and expand on key concepts\n• Research related topics mentioned\n• Apply learnings to practical scenarios\n\n*This summary was automatically generated from the video content.*',
         noteContent: '# Educational Video Summary\n\n## Video Information\n- **Source:** YouTube\n- **URL:** ' + url + '\n- **Date Processed:** ' + new Date().toLocaleDateString() + '\n\n## Key Learning Points\n\n### Main Concepts\n• [Key concept 1]\n• [Key concept 2]\n• [Key concept 3]\n\n### Important Details\n• [Detail 1]\n• [Detail 2]\n• [Detail 3]\n\n### Examples and Applications\n• [Example 1]\n• [Example 2]\n\n## Personal Notes\n\n[Add your own thoughts and reflections here]\n\n## Action Items\n\n- [ ] Review key concepts\n- [ ] Research related topics\n- [ ] Apply learnings',
         suggestions: ['📝 Add personal notes', '🔍 Research related topics', '💡 Generate quiz questions', '📋 Create action plan']
       },
       tutorial: {
-        title: 'Tutorial Video Notes',
+        title: `Tutorial Video Notes - ${videoId}`,
         content: '🛠️ **Tutorial Summary Generated**\n\n📺 **Source:** YouTube Tutorial\n🔗 **URL:** ' + url + '\n⏱️ **Processed:** ' + new Date().toLocaleString() + '\n\n## 📋 Step-by-Step Process\n\n• **Setup:** Initial requirements and preparation\n• **Implementation:** Core steps and procedures\n• **Tips & Tricks:** Best practices and shortcuts\n• **Troubleshooting:** Common issues and solutions\n\n## 🎯 Next Steps\n\n• Practice the demonstrated techniques\n• Adapt steps to your specific use case\n• Explore advanced variations\n\n*Ready to implement what you learned!*',
         noteContent: '# Tutorial: [Video Title]\n\n## Video Information\n- **Source:** YouTube Tutorial\n- **URL:** ' + url + '\n- **Date:** ' + new Date().toLocaleDateString() + '\n\n## Prerequisites\n• [Requirement 1]\n• [Requirement 2]\n\n## Step-by-Step Instructions\n\n### Step 1: [Title]\n[Description and details]\n\n### Step 2: [Title]\n[Description and details]\n\n### Step 3: [Title]\n[Description and details]\n\n## Tips and Best Practices\n• [Tip 1]\n• [Tip 2]\n\n## Common Issues\n• **Problem:** [Issue description]\n  **Solution:** [How to fix]\n\n## My Progress\n- [ ] Completed tutorial\n- [ ] Practiced techniques\n- [ ] Applied to project',
         suggestions: ['✅ Mark steps completed', '🔧 Add troubleshooting notes', '💡 Note improvements', '🚀 Plan next project']
       },
       presentation: {
-        title: 'Presentation Summary',
+        title: `Presentation Summary - ${videoId}`,
         content: '📊 **Presentation Summary**\n\n📺 **Source:** YouTube Presentation\n🔗 **URL:** ' + url + '\n⏱️ **Processed:** ' + new Date().toLocaleString() + '\n\n## 📋 Main Topics Covered\n\n• **Introduction:** Context and objectives\n• **Key Arguments:** Main points and evidence\n• **Data & Insights:** Statistics and findings\n• **Conclusions:** Final recommendations\n\n## 🎯 Key Takeaways\n\n• Important insights for decision making\n• Actionable recommendations\n• Areas for further investigation\n\n*Professional insights captured and organized.*',
         noteContent: '# Presentation Notes: [Title]\n\n## Presentation Details\n- **Source:** YouTube\n- **URL:** ' + url + '\n- **Date:** ' + new Date().toLocaleDateString() + '\n- **Presenter:** [Name]\n\n## Executive Summary\n[Brief overview of main points]\n\n## Key Topics\n\n### Topic 1: [Title]\n• [Point 1]\n• [Point 2]\n\n### Topic 2: [Title]\n• [Point 1]\n• [Point 2]\n\n## Important Data/Statistics\n• [Statistic 1]\n• [Statistic 2]\n\n## Action Items\n- [ ] [Action 1]\n- [ ] [Action 2]\n\n## Questions for Follow-up\n• [Question 1]\n• [Question 2]',
         suggestions: ['📊 Add data analysis', '❓ Note questions', '🎯 Create action plan', '📋 Schedule follow-up']
@@ -318,25 +318,25 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 rounded-3xl w-full max-w-7xl h-[90vh] flex overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 rounded-xl sm:rounded-2xl lg:rounded-3xl w-full max-w-7xl h-[98vh] sm:h-[95vh] lg:h-[90vh] flex flex-col lg:flex-row overflow-hidden shadow-2xl">
         {/* Main Note Creation Form */}
-        <div className="flex-1 p-8 flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-4">
+        <div className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 space-y-4 sm:space-y-0">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center">
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-white">Create New Note</h3>
-                  <p className="text-sm text-gray-400">Write with AI assistance</p>
+                  <h3 className="text-xl sm:text-2xl font-bold text-white">Create New Note</h3>
+                  <p className="text-xs sm:text-sm text-gray-400">Write with AI assistance</p>
                 </div>
               </div>
-              <div className="h-8 w-px bg-gray-700 mx-4"></div>
+              <div className="hidden sm:block h-8 w-px bg-gray-700 mx-4"></div>
               <button
                 onClick={() => setShowAiSidebar(!showAiSidebar)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 ${
+                className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded-xl transition-all duration-200 ${
                   showAiSidebar 
                     ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 border border-purple-500/30' 
                     : 'bg-gray-800/50 text-gray-400 hover:text-white hover:bg-gray-700/50 border border-gray-700'
@@ -344,7 +344,7 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
                 title="Toggle AI Assistant"
               >
                 <Bot className="w-4 h-4" />
-                <span className="text-sm font-medium">
+                <span className="text-xs sm:text-sm font-medium">
                   {showAiSidebar ? 'Hide AI' : 'Show AI'}
                 </span>
               </button>
@@ -369,7 +369,7 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
                 placeholder="Give your note a compelling title..."
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all text-sm sm:text-base"
               />
             </div>
             
@@ -384,8 +384,8 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
                 placeholder="Start writing your note... The AI assistant will help you improve it as you go!"
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
-                className="flex-1 min-h-[290px] px-4 py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 resize-none transition-all leading-relaxed text-base"
-                style={{ minHeight: '290px' }}
+                className="flex-1 min-h-[200px] sm:min-h-[250px] lg:min-h-[290px] px-3 sm:px-4 py-3 sm:py-4 bg-gray-800/50 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 resize-none transition-all leading-relaxed text-sm sm:text-base"
+
               />
             </div>
             
@@ -396,7 +396,7 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
                 <h5 className="text-sm font-semibold text-white">AI Quick Actions</h5>
                 <div className="flex-1 h-px bg-gradient-to-r from-purple-500/30 to-transparent"></div>
               </div>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button
                   onClick={() => handleQuickAction('improve')}
                   disabled={isAiProcessing}
@@ -432,17 +432,17 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
               </div>
             </div>
             
-            <div className="flex justify-end space-x-3">
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
               <button
                 onClick={onClose}
-                className="px-6 py-2 text-gray-400 hover:text-white transition-colors"
+                className="px-4 sm:px-6 py-2.5 sm:py-2 text-gray-400 hover:text-white transition-colors text-sm sm:text-base"
               >
                 Cancel
               </button>
               <button
                 onClick={onCreateNote}
                 disabled={!title.trim()}
-                className="px-6 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 sm:px-6 py-2.5 sm:py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
               >
                 Create Note
               </button>
@@ -452,8 +452,8 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
         
         {/* AI Assistant Sidebar */}
         {showAiSidebar && (
-          <div className="w-96 border-l border-gray-800 flex flex-col bg-gray-900/50">
-            <div className="p-4 border-b border-gray-800">
+          <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-800 flex flex-col bg-gray-900/50 max-h-[40vh] lg:max-h-none overflow-hidden">
+            <div className="p-4 border-b border-gray-800 flex-shrink-0 max-h-[50%] overflow-y-auto">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Bot className="w-5 h-5 text-purple-400" />
@@ -517,7 +517,7 @@ function CreateNoteModal({ isOpen, onClose, onCreateNote, title, setTitle, conte
             </div>
             
             {/* Chat Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
               {chatMessages.map((message) => (
                 <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] rounded-lg p-3 ${

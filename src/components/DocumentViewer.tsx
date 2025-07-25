@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   X, Star, Edit3, Download, Copy, ZoomIn, ZoomOut, FileText,
   Calendar, Tag, MessageCircle, Send, Bot, Minimize2,
@@ -12,11 +12,10 @@ interface DocumentViewerProps {
   note: Note;
   onClose: () => void;
   onToggleStar?: () => void;
-  onEdit?: () => void;
   onSave?: (updatedNote: Note) => void;
 }
 
-function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: DocumentViewerProps) {
+function DocumentViewer({ note, onClose, onToggleStar, onSave }: DocumentViewerProps) {
   const [fontSize, setFontSize] = useState(16);
   const [showMetadata, setShowMetadata] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -290,9 +289,9 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
   return (
     <div className="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex flex-col">
       {/* Document Header */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -308,23 +307,21 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
                     type="text"
                     value={editedTitle}
                     onChange={(e) => setEditedTitle(e.target.value)}
-                    className="text-xl font-semibold bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white"
-                    style={{ fontSize: `${fontSize}px` }}
+                    className="text-lg sm:text-xl font-semibold bg-transparent border-b border-gray-300 dark:border-gray-600 focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white w-full max-w-md"
+                    style={{ fontSize: `${Math.min(fontSize, 20)}px` }}
                   />
                 ) : (
-                  <h1 className="text-xl font-semibold text-gray-900 dark:text-white" style={{ fontSize: `${fontSize}px` }}>
+                  <h1 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white truncate" style={{ fontSize: `${Math.min(fontSize, 20)}px` }}>
                     {note.title}
                   </h1>
                 )}
-                <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <div className="flex items-center space-x-2 sm:space-x-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex-wrap">
                   <span className="flex items-center space-x-1">
                     <Calendar className="w-4 h-4" />
                     <span>
                       {note.createdAt 
                         ? new Date(note.createdAt).toLocaleDateString() 
-                        : note.timestamp 
-                          ? new Date(note.timestamp).toLocaleDateString()
-                          : 'Unknown date'
+                        : 'Unknown date'
                       }
                     </span>
                   </span>
@@ -340,7 +337,7 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
           </div>
 
           {/* Document Actions */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
             <button
               onClick={decreaseFontSize}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -436,9 +433,13 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
       {/* Document Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Main Content Area */}
-        <div className={`flex-1 flex flex-col ${showAIAssistant && !aiMinimized ? 'w-2/3' : 'w-full'} transition-all duration-300`}>
+        <div className={`flex-1 flex flex-col transition-all duration-300 ${
+          showAIAssistant && !aiMinimized 
+            ? 'w-full lg:w-2/3' 
+            : 'w-full'
+        }`}>
           <div className="flex-1 overflow-y-auto">
-            <div className="max-w-4xl mx-auto px-6 py-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
               {/* Metadata Panel */}
               {showMetadata && (
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6 border border-gray-200 dark:border-gray-700">
@@ -451,15 +452,13 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500 dark:text-gray-400">Created:</span>
                       <span className="ml-2 text-gray-900 dark:text-white">
                         {note.createdAt 
                           ? new Date(note.createdAt).toLocaleString()
-                          : note.timestamp 
-                            ? new Date(note.timestamp).toLocaleString()
-                            : 'Unknown date'
+                          : 'Unknown date'
                         }
                       </span>
                     </div>
@@ -620,7 +619,7 @@ function DocumentViewer({ note, onClose, onToggleStar, onEdit, onSave }: Documen
             Document created with DzowaAI Notes
           </div>
           <div>
-            {note.content.split(/\s+/).filter(word => word.length > 0).length} words • {note.content.length} characters
+            {note.content.split(/\s+/).filter((word: string) => word.length > 0).length} words • {note.content.length} characters
           </div>
         </div>
       </div>

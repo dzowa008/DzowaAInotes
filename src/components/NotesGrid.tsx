@@ -125,9 +125,9 @@ export const NotesGrid: React.FC<NotesGridProps> = ({
   }
 
   return (
-    <div className="space-y-6">
-      {/* View Controls */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header with search and filters */}
+      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center justify-between">
         <div className="flex items-center space-x-4">
           <span className={`text-sm font-medium ${
             theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
@@ -154,10 +154,10 @@ export const NotesGrid: React.FC<NotesGridProps> = ({
           )}
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
               viewMode === 'grid'
                 ? theme === 'dark' 
                   ? 'bg-purple-600 text-white' 
@@ -171,7 +171,7 @@ export const NotesGrid: React.FC<NotesGridProps> = ({
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg transition-colors ${
+            className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
               viewMode === 'list'
                 ? theme === 'dark' 
                   ? 'bg-purple-600 text-white' 

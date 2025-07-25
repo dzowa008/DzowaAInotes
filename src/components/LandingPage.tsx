@@ -1,13 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Bot, 
   Mic, 
-  FileText, 
-  Zap, 
   Shield, 
-  Users, 
-  Star, 
-  Play, 
   Check, 
   ArrowRight, 
   Menu, 
@@ -17,10 +12,6 @@ import {
   MessageSquare,
   Upload,
   Search,
-  TrendingUp,
-  Globe,
-  Award,
-  ChevronDown,
   Quote
 } from 'lucide-react';
 
@@ -230,7 +221,7 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
               Introducing AI-Powered Note Taking
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent leading-tight">
               Your Notes,
               <br />
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -238,7 +229,7 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
               </span>
             </h1>
             
-            <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg sm:text-xl md:text-2xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed px-4">
               Transform how you capture, organize, and interact with information. 
               SmaRta uses advanced AI to make your notes intelligent, searchable, and actionable.
             </p>
@@ -316,7 +307,18 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
           </div>
 
           <div className="relative max-w-4xl mx-auto">
-          <video autoPlay muted loop  src="../smarta.mp4"></video>
+          <div className="aspect-video bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl overflow-hidden">
+              <video 
+                autoPlay 
+                muted 
+                loop 
+                className="w-full h-full object-cover"
+                src="./smarta.mp4"
+              >
+                <source src="./smarta.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
 
             {/* Floating UI Elements */}
             <div className="absolute -top-4 -left-4 bg-purple-500/20 backdrop-blur-xl border border-purple-500/30 rounded-lg p-3 animate-float">
@@ -324,10 +326,10 @@ function LandingPage({ onGetStarted }: LandingPageProps) {
               
             </div>
             <div className="absolute -top-4 -right-4 bg-pink-500/20 backdrop-blur-xl border border-pink-500/30 rounded-lg p-3 animate-float delay-1000">
-              <Brain className="w-6 h-6 text-pink-400"onClick={onGetStarted} />
+              <Brain className="w-6 h-6 text-pink-400" onClick={onGetStarted} />
             </div>
             <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-blue-500/20 backdrop-blur-xl border border-blue-500/30 rounded-lg p-3 animate-float delay-2000">
-              <MessageSquare className="w-6 h-6 text-blue-400" onClick={onGetStarted}/>
+              <MessageSquare className="w-6 h-6 text-blue-400" onClick={onGetStarted} />
             </div>
           </div>
         </div>

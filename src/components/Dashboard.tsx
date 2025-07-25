@@ -54,7 +54,7 @@ function Dashboard() {
   const [chatInput, setChatInput] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 1024); // Default open on desktop, closed on mobile
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState('');
   const [newNoteContent, setNewNoteContent] = useState('');
@@ -138,6 +138,21 @@ function Dashboard() {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
   }, [isRecording, isAutoSaving]);
+
+  // Handle responsive sidebar behavior
+  useEffect(() => {
+    const handleResize = () => {
+      // Auto-close sidebar on mobile, auto-open on desktop
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (isRecording) {
@@ -824,7 +839,7 @@ function Dashboard() {
         </div>
       )}
       
-      <div className="flex h-screen">
+      <div className="flex flex-col lg:flex-row h-screen">
         <Sidebar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -845,24 +860,26 @@ function Dashboard() {
             searchQuery={searchQuery}
             onSearchChange={debouncedSearch}
             onSettingsClick={() => setShowSettings(true)}
+            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            isSidebarOpen={isSidebarOpen}
           />
 
-          <main className="flex-1 overflow-y-auto p-6">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 max-h-screen">
             {activeTab === 'dashboard' && (
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <StatsCards stats={stats} />
                 
                 {/* AI Insights Panel */}
-                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
                     <div className="flex items-center space-x-3">
-                      <Brain className="w-6 h-6 text-purple-400" />
-                      <h3 className="text-xl font-semibold text-white">AI Insights</h3>
+                      <Brain className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
+                      <h3 className="text-lg sm:text-xl font-semibold text-white">AI Insights</h3>
                     </div>
                     <button
                       onClick={generateAiInsights}
                       disabled={aiProcessing}
-                      className="flex items-center space-x-2 px-4 py-2 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors disabled:opacity-50"
+                      className="flex items-center space-x-2 px-3 py-2 sm:px-4 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors disabled:opacity-50 text-sm sm:text-base"
                     >
                       {aiProcessing ? (
                         <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
@@ -900,10 +917,10 @@ function Dashboard() {
                 </div>
 
                 {/* Smart Suggestions */}
-                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6">
+                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <Lightbulb className="w-6 h-6 text-yellow-400" />
-                    <h3 className="text-xl font-semibold text-white">Smart Suggestions</h3>
+                    <Lightbulb className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">Smart Suggestions</h3>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -923,10 +940,10 @@ function Dashboard() {
                 </div>
 
                 {/* Recent Activity */}
-                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6">
+                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <Activity className="w-6 h-6 text-blue-400" />
-                    <h3 className="text-xl font-semibold text-white">Recent Activity</h3>
+                    <Activity className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">Recent Activity</h3>
                   </div>
                   
                   {recentActivity.length > 0 ? (
@@ -952,10 +969,10 @@ function Dashboard() {
                 </div>
 
                 {/* AI Tools */}
-                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6">
+                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center space-x-3 mb-4">
-                    <Zap className="w-6 h-6 text-green-400" />
-                    <h3 className="text-xl font-semibold text-white">AI Tools</h3>
+                    <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-green-400" />
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">AI Tools</h3>
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1001,9 +1018,9 @@ function Dashboard() {
                   isRecording={isRecording}
                 />
                 
-                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl font-semibold text-white">Recent Notes</h3>
+                <div className="bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-2xl p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
+                    <h3 className="text-lg sm:text-xl font-semibold text-white">Recent Notes</h3>
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => setIsCreatingNote(true)}
